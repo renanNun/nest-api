@@ -1,7 +1,5 @@
 import { BaseEntity, Column, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
-import * as bcrypt from 'bcrypt';
 
-const saltOrRounds = 10;
 
 export enum UserRole {
     ADMIN = "admin",
@@ -37,7 +35,7 @@ export class User extends BaseEntity {
         length: 255,
         nullable: false
     })
-    _password: string;
+    password: string;
 
     @Column({
         type: "enum",
@@ -48,17 +46,8 @@ export class User extends BaseEntity {
 
     @UpdateDateColumn({
         name: 'updated_at',
-        type: 'timestamptz',
+        type: 'timestamp',
         default: () => 'CURRENT_TIMESTAMP'
     })
     updatedAt: Date;
-
-    get password(): string{
-        return this._password;
-    }
-
-    set password(password: string) {
-        let hash = bcrypt.hashSync(password,saltOrRounds);
-        this._password = hash;
-    }
 }
