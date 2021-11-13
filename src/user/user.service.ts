@@ -1,12 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
 import * as bcrypt from 'bcrypt';
-
-const saltOrRounds = 10;
+import { CredentialsDto } from 'src/auth/dto/credentials.dto';
 
 @Injectable()
 export class UserService {
@@ -16,27 +15,58 @@ export class UserService {
   ) {}
 
   create(createUserDto: CreateUserDto): Promise<User> {
+    const saltOrRounds = bcrypt.genSaltSync();
     
-    let hash = bcrypt.hashSync(createUserDto.password,saltOrRounds);
-    createUserDto.password = hash;
-    
+    this.hashPassword(createUserDto.password, saltOrRounds).then(password => {
+      createUserDto.password = password;
+    });
+
     const user = this.repository.create(createUserDto);
     return this.repository.save(user);
   }
 
-  findAll() {
-    return `This action returns all user`;
+  findAll(): Promise<User[]> {
+    return this.repository.find();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  findOne(id: string): Promise<User> {
+    return this.repository.findOne(id);
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
+    const user = await this.repository.preload({
+      id: id,
+      ...updateUserDto
+    });
+
+    if(!user) {
+      throw new NotFoundException(`User ${id} not Found!`);
+    }
+
+    return this.repository.save(user);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async remove(id: string) {
+    const user = await this.repository.findOne(id);
+    return this.repository.remove(user);
   }
+
+  async checkCredentials(credentialsDto: CredentialsDto): Promise<User> {
+
+    const { email, password } = credentialsDto;
+
+    const user = await this.repository.findOne({email: email});
+
+    if(user && (await user.checkPassword(password)))
+    {
+      return user;
+    }else{
+      return null;
+    }
+  }
+
+  private async hashPassword(password: string, saltOrRounds: string): Promise<string> {
+    return await bcrypt.hash(password,saltOrRounds);
+  }
+
 }

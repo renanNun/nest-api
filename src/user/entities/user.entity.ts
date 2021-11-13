@@ -1,11 +1,6 @@
+import { UserRole } from "src/user/user-role.enum";
 import { BaseEntity, Column, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
-
-
-export enum UserRole {
-    ADMIN = "admin",
-    GHOST = "ghost"
-}
-
+import * as bcrypt from 'bcrypt';
 
 @Entity()
 export class User extends BaseEntity {
@@ -50,4 +45,10 @@ export class User extends BaseEntity {
         default: () => 'CURRENT_TIMESTAMP'
     })
     updatedAt: Date;
+
+    async checkPassword(password: string): Promise<boolean> {
+        return bcrypt.compare(password, this.password).then(result => {
+            return result;
+        });
+    }
 }
