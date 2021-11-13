@@ -3,7 +3,7 @@ import { IsEmail, IsNotEmpty, IsString, Length, MinLength } from "class-validato
 import { IsUserAlreadyExist } from "src/decorators/userExists.decorator";
 import { Match } from "src/decorators/match.decorator";
 import { UserRole } from "src/user/user-role.enum";
-import { IsRoleExist } from "src/decorators/role.decorator";
+import { IsRoleExist } from "src/decorators/checkRole.decorator";
 
 export class CreateUserDto {
     @ApiProperty({ example: 'John Jones', description: 'O Nome deve ser um nome válido, com no mínimo 3 caracteres' })

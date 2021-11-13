@@ -4,25 +4,18 @@ import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
-import * as bcrypt from 'bcrypt';
 import { CredentialsDto } from 'src/auth/dto/credentials.dto';
+import { UserRepository } from './user.repository';
 
 @Injectable()
 export class UserService {
   constructor(
-    @InjectRepository(User)
-    private readonly repository: Repository<User>
+    @InjectRepository(UserRepository)
+    private readonly repository: UserRepository
   ) {}
 
   create(createUserDto: CreateUserDto): Promise<User> {
-    const saltOrRounds = bcrypt.genSaltSync();
-    
-    this.hashPassword(createUserDto.password, saltOrRounds).then(password => {
-      createUserDto.password = password;
-    });
-
-    const user = this.repository.create(createUserDto);
-    return this.repository.save(user);
+    return this.repository.createUser(createUserDto);
   }
 
   findAll(): Promise<User[]> {
@@ -30,7 +23,13 @@ export class UserService {
   }
 
   findOne(id: string): Promise<User> {
-    return this.repository.findOne(id);
+    return this.repository.findOne(id, {
+      select: ['name','email','role','id']
+    }).then(user => {
+      if(!user) throw new NotFoundException('Usuário não encontrado');
+
+      return user;
+    });
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
@@ -63,10 +62,6 @@ export class UserService {
     }else{
       return null;
     }
-  }
-
-  private async hashPassword(password: string, saltOrRounds: string): Promise<string> {
-    return await bcrypt.hash(password,saltOrRounds);
   }
 
 }
